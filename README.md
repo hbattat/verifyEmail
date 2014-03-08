@@ -10,7 +10,7 @@ How to use:
 Simply call the function:
 
 ```PHP
-print_r(verifyEmail('some.email.address@example.com', 'my.email.address@my-domain.com'));
+verifyEmail('some.email.address@example.com', 'my.email.address@my-domain.com');
 ```
 The first email address 'some.email.address@example.com' is the one to be checked, and the second 'my.email.address@my-domain.com' is an email address to be provided to the server (just for testing, but would be better if it is a valid email)
 
