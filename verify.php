@@ -25,9 +25,9 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 		else {
 
 			$result   = "invalid";
-			$details .= "No suitable MX records found."
+			$details .= "No suitable MX records found.";
 
-			return ($getdetails) ? array($result, $details) : $result;
+			return ( (true == $getdetails) ? array($result, $details) : $result );
 		}
 	}
 	
