@@ -3,9 +3,25 @@ print_r(verifyEmail('dsfdsfdasdsadasdasds@gmail.com', 'root@w3ing.tk', true));
 
 function verifyEmail($toemail, $fromemail, $getdetails = false){
 	$email_arr = explode("@", $toemail);
-	$domain = $email_arr[1];
-	getmxrr($domain, $mxhosts, $mxweight);
-	$mx = $mxhosts[array_search(min($mxweight), $mxhosts)];
+	$domain = array_slice($email_arr, -1);
+	$domain = $domain[0];
+
+	// Trim [ and ] from beginning and end of domain string, respectively
+	$domain = ltrim($domain, "[");
+	$domain = rtrim($domain, "]");
+
+	$mxhosts = array();
+	if( filter_var($domain, FILTER_VALIDATE_IP) )
+		$mx_ip = $domain;
+	else
+		getmxrr($domain, $mxhosts, $mxweight);
+
+	if(!empty($mxhosts) )
+		$mx_ip = $mxhosts[array_search(min($mxweight), $mxhosts)];
+	else {
+		$record_a = dns_get_record($domain, DNS_A);
+		$mx_ip = $record_a['ip'];
+	}
 	
 	$connect = @fsockopen($mx, 25); 
 	if($connect){ 
