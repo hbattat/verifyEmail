@@ -1,6 +1,4 @@
 <?php
-print_r(verifyEmail('dsfdsfdasdsadasdasds@gmail.com', 'root@w3ing.tk', true));
-
 function verifyEmail($toemail, $fromemail, $getdetails = false){
 	$email_arr = explode("@", $toemail);
 	$domain = array_slice($email_arr, -1);
@@ -9,6 +7,10 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 	// Trim [ and ] from beginning and end of domain string, respectively
 	$domain = ltrim($domain, "[");
 	$domain = rtrim($domain, "]");
+
+	if( "IPv6:" == substr($domain, 0, strlen("IPv6:")) ) {
+		$domain = substr($domain, strlen("IPv6") + 1);
+	}
 
 	$mxhosts = array();
 	if( filter_var($domain, FILTER_VALIDATE_IP) )
@@ -19,7 +21,13 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 	if(!empty($mxhosts) )
 		$mx_ip = $mxhosts[array_search(min($mxweight), $mxhosts)];
 	else {
-		$record_a = dns_get_record($domain, DNS_A);
+		if( filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ) {
+			$record_a = dns_get_record($domain, DNS_A);
+		}
+		elseif( filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ) {
+			$record_a = dns_get_record($domain, DNS_AAAA);
+		}
+
 		if( !empty($record_a) )
 			$mx_ip = $record_a[0]['ip'];
 		else {
