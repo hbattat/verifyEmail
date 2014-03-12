@@ -20,7 +20,15 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 		$mx_ip = $mxhosts[array_search(min($mxweight), $mxhosts)];
 	else {
 		$record_a = dns_get_record($domain, DNS_A);
-		$mx_ip = $record_a['ip'];
+		if( !empty($record_a) )
+			$mx_ip = $record_a[0]['ip'];
+		else {
+
+			$result   = "invalid";
+			$details .= "No suitable MX records found."
+
+			return ($getdetails) ? array($result, $details) : $result;
+		}
 	}
 	
 	$connect = @fsockopen($mx_ip, 25); 
