@@ -42,7 +42,7 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 	$connect = @fsockopen($mx_ip, 25); 
 	if($connect){ 
 		if(ereg("^220", $out = fgets($connect, 1024))){ 
-			fputs ($connect , "HELO $HTTP_HOST\r\n"); 
+			fputs ($connect , "HELO $mx_ip\r\n"); 
 			$out = fgets ($connect, 1024);
 			$details .= $out."\n";
  
