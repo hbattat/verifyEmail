@@ -41,7 +41,7 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 	
 	$connect = @fsockopen($mx_ip, 25); 
 	if($connect){ 
-		if(ereg("^220", $out = fgets($connect, 1024))){ 
+		if(preg_match("/^220/i", $out = fgets($connect, 1024))){
 			fputs ($connect , "HELO $mx_ip\r\n"); 
 			$out = fgets ($connect, 1024);
 			$details .= $out."\n";
@@ -57,7 +57,7 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 			fputs ($connect , "QUIT"); 
 			fclose($connect);
 
-			if(!ereg("^250", $from) || !ereg("^250", $to)){
+			if(!preg_match("/^250/i", $from) || !preg_match("/^250/i", $to)){
 				$result = "invalid"; 
 			}
 			else{
