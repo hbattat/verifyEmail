@@ -58,15 +58,15 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 			fclose($connect);
 
 			if(!preg_match("/^250/i", $from) || !preg_match("/^250/i", $to)){
-				$result = "invalid"; 
+				$result = "false"; 
 			}
 			else{
-				$result = "valid";
+				$result = "true";
 			}
 		} 
 	}
 	else{
-		$result = "invalid";
+		$result = "false";
 		$details .= "Could not connect to server";
 	}
 	if($getdetails){
