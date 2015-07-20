@@ -19,7 +19,7 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 		getmxrr($domain, $mxhosts, $mxweight);
 
 	if(!empty($mxhosts) )
-		$mx_ip = $mxhosts[array_search(min($mxweight), $mxhosts)];
+		$mx_ip = $mxhosts[array_search(min($mxweight), $mxweight)];
 	else {
 		if( filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ) {
 			$record_a = dns_get_record($domain, DNS_A);
