@@ -3,6 +3,7 @@ function verifyEmail($toemail, $fromemail, $getdetails = false){
 	$email_arr = explode("@", $toemail);
 	$domain = array_slice($email_arr, -1);
 	$domain = $domain[0];
+	$details = '';
 
 	// Trim [ and ] from beginning and end of domain string, respectively
 	$domain = ltrim($domain, "[");
