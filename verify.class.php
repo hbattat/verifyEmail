@@ -158,7 +158,7 @@
       }
 
       if(!empty($mxhosts) ) {
-        $mx_ip = $mxhosts[array_search(min($mxweight), $mxhosts)];
+        $mx_ip = $mxhosts[array_search(min($mxweight), $mxweight)];
       }
       else {
         if( filter_var($domain, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ) {
