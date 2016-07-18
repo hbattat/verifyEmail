@@ -87,6 +87,17 @@ Array
 ```
 
 
+Other Examples:
+===============
+You can also modify/set the values of email to verify, verifier email, and port number on the fly after initializing
+```PHP
+$ve->set_email('<another email Address to verify>');
+$ve->set_verifier_email('<another verifier email>');
+$ve->set_port(<port number>);
+```
+
+
+
 Notes:
 ======
 - Some mail servers will silentlty reject the test message, to prevent spammers from checking against their users' emails and filter the valid emails, so this function might not work properly with all mail servers.
