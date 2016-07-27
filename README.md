@@ -4,6 +4,10 @@ Is a PHP class that can be easily used to verify an email address and make sure 
 
 This class connects to the mail server and checks whether the mailbox exists or not.
 
+Blog posts:
+Descriuption: http://curlybrac.es/2016/07/25/verifyemail-php-class-to-validate-email-address/
+How to configure mail server: http://curlybrac.es/2016/07/27/how-to-configure-a-mail-server/
+
 
 How to use:
 ===========
@@ -100,7 +104,7 @@ $ve->set_port(<port number>);
 
 Notes:
 ======
-- Some mail servers will silentlty reject the test message, to prevent spammers from checking against their users' emails and filter the valid emails, so this function might not work properly with all mail servers.
+- Some mail servers will silently reject the test message, to prevent spammers from checking against their users' emails and filter the valid emails, so this function might not work properly with all mail servers.
 
 - You server must be configured properly as a mail server to avaiod being blocked or blacklisted. This includes things like SSL, SPF records, Domain Keys, DMARC records, etc. To check your server use this tool https://mail-tester.com
 
