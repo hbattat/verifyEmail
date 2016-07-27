@@ -5,8 +5,11 @@ Is a PHP class that can be easily used to verify an email address and make sure 
 This class connects to the mail server and checks whether the mailbox exists or not.
 
 Blog posts:
+
 Descriuption: http://curlybrac.es/2016/07/25/verifyemail-php-class-to-validate-email-address/
+
 How to configure mail server: http://curlybrac.es/2016/07/27/how-to-configure-a-mail-server/
+
 
 
 How to use:
