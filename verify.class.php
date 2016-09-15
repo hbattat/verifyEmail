@@ -52,7 +52,7 @@
     }
 
     public function set_port($port) {
-      $this->port = $email;
+      $this->port = $port;
     }
 
     public function get_port() {
