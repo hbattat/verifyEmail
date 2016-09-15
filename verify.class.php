@@ -71,75 +71,90 @@
       $this->debug[] = 'Verify function was called.';
 
       $is_valid = false;
-      //find mx
-      $this->debug[] = 'Finding MX record...';
-      $this->find_mx();
 
-      if(!$this->mx) {
-        $this->debug[] = 'No MX record was found.';
-        $this->add_error('100', 'No suitable MX records found.');
-        return $is_valid;
+      //check if this is a yahoo email
+      $domain = $this->get_domain();
+      if($domain == 'yahoo.com') {
+        $is_valid = $this->validate_yahoo();
       }
+      //otherwise check the normal way
       else {
-        $this->debug[] = 'Found MX: '.$this->mx;
-      }
+        //find mx
+        $this->debug[] = 'Finding MX record...';
+        $this->find_mx();
 
-
-      $this->debug[] = 'Connecting to the server...';
-      $this->connect_mx();
-
-      if(!$this->connect) {
-        $this->debug[] = 'Connection to server failed.';
-        $this->add_error('110', 'Could not connect to the server.');
-        return $is_valid;
-      }
-      else {
-        $this->debug[] = 'Connection to server was successful.';
-      }
-
-
-      $this->debug[] = 'Starting veriffication...';
-      if(preg_match("/^220/i", $out = fgets($this->connect, 1024))){
-        $this->debug[] = 'Got a 220 response. Sending HELO...';
-        fputs ($this->connect , "HELO ".$this->mx."\r\n"); 
-        $out = fgets ($this->connect, 1024);
-        $this->debug[] = 'Response: '.$out;
-   
-        $this->debug[] = 'Sending MAIL FROM...';
-        fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n"); 
-        $from = fgets ($this->connect, 1024); 
-        $this->debug[] = 'Response: '.$from;
-
-        $this->debug[] = 'Sending RCPT TO...';
-        fputs ($this->connect , "RCPT TO: <".$this->email.">\r\n"); 
-        $to = fgets ($this->connect, 1024);
-        $this->debug[] = 'Response: '.$to;
-
-        $this->debug[] = 'Sending QUIT...';
-        fputs ($this->connect , "QUIT"); 
-        fclose($this->connect);
-
-        $this->debug[] = 'Looking for 250 response...';
-        if(!preg_match("/^250/i", $from) || !preg_match("/^250/i", $to)){
-          $this->debug[] = 'Not found! Email is invalid.';
-          $is_valid = false; 
+        if(!$this->mx) {
+          $this->debug[] = 'No MX record was found.';
+          $this->add_error('100', 'No suitable MX records found.');
+          return $is_valid;
         }
-        else{
-          $this->debug[] = 'Found! Email is valid.';
-          $is_valid = true;
+        else {
+          $this->debug[] = 'Found MX: '.$this->mx;
         }
+
+
+        $this->debug[] = 'Connecting to the server...';
+        $this->connect_mx();
+
+        if(!$this->connect) {
+          $this->debug[] = 'Connection to server failed.';
+          $this->add_error('110', 'Could not connect to the server.');
+          return $is_valid;
+        }
+        else {
+          $this->debug[] = 'Connection to server was successful.';
+        }
+
+
+        $this->debug[] = 'Starting veriffication...';
+        if(preg_match("/^220/i", $out = fgets($this->connect, 1024))){
+          $this->debug[] = 'Got a 220 response. Sending HELO...';
+          fputs ($this->connect , "HELO ".$this->mx."\r\n"); 
+          $out = fgets ($this->connect, 1024);
+          $this->debug[] = 'Response: '.$out;
+     
+          $this->debug[] = 'Sending MAIL FROM...';
+          fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n"); 
+          $from = fgets ($this->connect, 1024); 
+          $this->debug[] = 'Response: '.$from;
+
+          $this->debug[] = 'Sending RCPT TO...';
+          fputs ($this->connect , "RCPT TO: <".$this->email.">\r\n"); 
+          $to = fgets ($this->connect, 1024);
+          $this->debug[] = 'Response: '.$to;
+
+          $this->debug[] = 'Sending QUIT...';
+          fputs ($this->connect , "QUIT"); 
+          fclose($this->connect);
+
+          $this->debug[] = 'Looking for 250 response...';
+          if(!preg_match("/^250/i", $from) || !preg_match("/^250/i", $to)){
+            $this->debug[] = 'Not found! Email is invalid.';
+            $is_valid = false; 
+          }
+          else{
+            $this->debug[] = 'Found! Email is valid.';
+            $is_valid = true;
+          }
+        }
+        else {
+          $this->debug[] = 'Encountered an unknown response code.';
+        } 
       }
-      else {
-        $this->debug[] = 'Encountered an unknown response code.';
-      } 
 
       return $is_valid;
     }
 
-    private function find_mx() {
+    private function get_domain() {
       $email_arr = explode("@", $this->email);
       $domain = array_slice($email_arr, -1);
-      $domain = $domain[0];
+      return $domain[0];
+    }
+    private function find_mx() {
+      // $email_arr = explode("@", $this->email);
+      // $domain = array_slice($email_arr, -1);
+      // $domain = $domain[0];
+      $domain = $this->get_domain();
       $mx_ip = false;
       // Trim [ and ] from beginning and end of domain string, respectively
       $domain = ltrim($domain, "[");
@@ -191,6 +206,18 @@
       $this->errors = array();
     }
 
+    private function validate_yahoo() {
+      $yahoo_url = 'https://edit.yahoo.com/reg_json?AccountID='.$this->email.'&PartnerName=yahoo_default&ApiName=ValidateFields';
+      $result = json_decode(file_get_contents($yahoo_url), true);
+      if( $result['ResultCode'] == 'SUCCESS' || 
+          ($result['ResultCode'] == 'PERMANENT_FAILURE' && @empty($result['SuggestedIDList']) )
+        ) {
+        return false;
+      }
+      else {
+        return true;
+      }
+    }
 
 
   }
