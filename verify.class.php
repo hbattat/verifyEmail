@@ -109,28 +109,28 @@
         $this->debug[] = 'Starting veriffication...';
         if(preg_match("/^220/i", $out = fgets($this->connect, 1024))){
           $this->debug[] = 'Got a 220 response. Sending HELO...';
-          fputs ($this->connect , "HELO ".$this->mx."\r\n"); 
+          fputs ($this->connect , "HELO ".$this->get_domain($this->verifier_email)."\r\n");
           $out = fgets ($this->connect, 1024);
           $this->debug[] = 'Response: '.$out;
-     
+
           $this->debug[] = 'Sending MAIL FROM...';
-          fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n"); 
-          $from = fgets ($this->connect, 1024); 
+          fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n");
+          $from = fgets ($this->connect, 1024);
           $this->debug[] = 'Response: '.$from;
 
           $this->debug[] = 'Sending RCPT TO...';
-          fputs ($this->connect , "RCPT TO: <".$this->email.">\r\n"); 
+          fputs ($this->connect , "RCPT TO: <".$this->email.">\r\n");
           $to = fgets ($this->connect, 1024);
           $this->debug[] = 'Response: '.$to;
 
           $this->debug[] = 'Sending QUIT...';
-          fputs ($this->connect , "QUIT"); 
+          fputs ($this->connect , "QUIT");
           fclose($this->connect);
 
           $this->debug[] = 'Looking for 250 response...';
           if(!preg_match("/^250/i", $from) || !preg_match("/^250/i", $to)){
             $this->debug[] = 'Not found! Email is invalid.';
-            $is_valid = false; 
+            $is_valid = false;
           }
           else{
             $this->debug[] = 'Found! Email is valid.';
@@ -139,14 +139,14 @@
         }
         else {
           $this->debug[] = 'Encountered an unknown response code.';
-        } 
+        }
       }
 
       return $is_valid;
     }
 
-    private function get_domain() {
-      $email_arr = explode("@", $this->email);
+    private function get_domain($email = null) {
+      $email_arr = explode("@", $email?:$this->email);
       $domain = array_slice($email_arr, -1);
       return $domain[0];
     }
@@ -209,7 +209,7 @@
     private function validate_yahoo() {
       $yahoo_url = 'https://edit.yahoo.com/reg_json?AccountID='.$this->email.'&PartnerName=yahoo_default&ApiName=ValidateFields';
       $result = json_decode(file_get_contents($yahoo_url), true);
-      if( $result['ResultCode'] == 'SUCCESS' || 
+      if( $result['ResultCode'] == 'SUCCESS' ||
           ($result['ResultCode'] == 'PERMANENT_FAILURE' && @empty($result['SuggestedIDList']) )
         ) {
         return false;
