@@ -108,7 +108,7 @@
 
         $this->debug[] = 'Starting veriffication...';
         if(preg_match("/^220/i", $out = fgets($this->connect, 1024))){
-          $this->debug[] = 'Got a 220 response. Sending HELO ' . $this->get_domain();
+          $this->debug[] = 'Got a 220 response. Sending HELO...';
           fputs ($this->connect , "HELO ".$this->get_domain($this->verifier_email)."\r\n");
           $out = fgets ($this->connect, 1024);
           $this->debug[] = 'Response: '.$out;
