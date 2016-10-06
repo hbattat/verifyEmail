@@ -6,7 +6,7 @@ This class connects to the mail server and checks whether the mailbox exists or 
 
 Blog posts:
 
-Descriuption: http://curlybrac.es/2016/07/25/verifyemail-php-class-to-validate-email-address/
+Description: http://curlybrac.es/2016/07/25/verifyemail-php-class-to-validate-email-address/
 
 How to configure mail server: http://curlybrac.es/2016/07/27/how-to-configure-a-mail-server/
 
@@ -33,7 +33,7 @@ Then you call the verify function:
 var_dump($ve->verify());
 ```
 
-This will restun a boolean. True if the email is valid, false otherwise.
+This will return a boolean. True if the email is valid, false otherwise.
 
 ```HTML
 bool(true)
@@ -46,7 +46,7 @@ If you want to get any errors, call this function after the verify function:
 print_r($ve->get_errors());
 ```
 
-This will resturn an array of all errors (if any):
+This will return an array of all errors (if any):
 
 
 ```HTML
