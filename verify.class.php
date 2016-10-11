@@ -81,7 +81,7 @@
 
       //check if this is a yahoo email
       $domain = $this->get_domain($this->email);
-      if($domain == 'yahoo.com') {
+      if(strtolower($domain) == 'yahoo.com') {
         $is_valid = $this->validate_yahoo();
       }
       //otherwise check the normal way
