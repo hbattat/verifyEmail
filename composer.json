@@ -11,5 +11,10 @@
             "name": "Sam Battat",
             "email": "hbattat@msn.com"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-4": {
+            "hbattat\\VerifyEmail\\": "./src"
+        }
+    }
 }
