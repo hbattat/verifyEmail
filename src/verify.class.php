@@ -12,6 +12,7 @@
    *
    * @package VerifyEmail
    * @author  Husam (Sam) Battat <hbattat@msn.com>
+   * This is a test message for packagist
    */
 
   class VerifyEmail {
