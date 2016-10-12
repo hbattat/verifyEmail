@@ -1,5 +1,5 @@
 <?php
-  namespace hbattat\VerifyEmail;
+  namespace hbattat;
   /**
    *  Verifies email address by attempting to connect and check with the mail server of that account
    *
