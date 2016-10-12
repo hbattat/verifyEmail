@@ -26,19 +26,24 @@
     private $debug_raw;
 
 
-    public function __construct($email, $verifier_email, $port = 25){
-      $this->email = $email;
-      $this->verifier_email = $verifier_email;
-      $this->port = $port;
-
+    public function __construct($email = null, $verifier_email = null, $port = 25){
       $this->debug = array();
       $this->debug_raw = array();
-      $this->debug[] = 'initialized with Email: '.$email.', Verifier Email: '.$verifier_email.', Port: '.$port;
+      if(!is_null($email) && !is_null($verifier_email)) {
+        $this->debug[] = 'Initialized with Email: '.$email.', Verifier Email: '.$verifier_email.', Port: '.$port;
+        $this->set_email($email);
+        $this->set_verifier_email($verifier_email);
+      }
+      else {
+        $this->debug[] = 'Initialized with no email or verifier email values';
+      }
+      $this->set_port($port);
     }
 
 
     public function set_verifier_email($email) {
       $this->verifier_email = $email;
+      $this->debug[] = 'Verifier Email was set to '.$email;
     }
 
     public function get_verifier_email() {
@@ -48,6 +53,7 @@
 
     public function set_email($email) {
       $this->email = $email;
+      $this->debug[] = 'Email was set to '.$email;
     }
 
     public function get_email() {
@@ -56,6 +62,7 @@
 
     public function set_port($port) {
       $this->port = $port;
+      $this->debug[] = 'Port was set to '.$port;
     }
 
     public function get_port() {
