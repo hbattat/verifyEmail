@@ -31,7 +31,6 @@
     private $_yahoo_signup_ajax_url = 'https://login.yahoo.com/account/module/create?validateField=yid';
     private $yahoo_signup_page_content;
     private $yahoo_signup_page_headers;
-    private $_yahoo_exists_error_code = 'IDENTIFIER_EXISTS';
 
     public function __construct($email = null, $verifier_email = null, $port = 25){
       $this->debug = array();
