@@ -1,5 +1,7 @@
 <?php
   namespace hbattat;
+  use \DOMDocument;
+  use \DOMXpath;
   /**
    *  Verifies email address by attempting to connect and check with the mail server of that account
    *
@@ -25,6 +27,11 @@
     private $debug;
     private $debug_raw;
 
+    private $_yahoo_signup_page_url = 'https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
+    private $_yahoo_signup_ajax_url = 'https://login.yahoo.com/account/module/create?validateField=yid';
+    private $yahoo_signup_page_content;
+    private $yahoo_signup_page_headers;
+    private $_yahoo_exists_error_code = 'IDENTIFIER_EXISTS';
 
     public function __construct($email = null, $verifier_email = null, $port = 25){
       $this->debug = array();
@@ -223,17 +230,119 @@
     }
 
     private function validate_yahoo() {
-      $yahoo_url = 'https://edit.yahoo.com/reg_json?AccountID='.$this->email.'&PartnerName=yahoo_default&ApiName=ValidateFields';
-      $result = json_decode(file_get_contents($yahoo_url), true);
-      if( $result['ResultCode'] == 'SUCCESS' ||
-          ($result['ResultCode'] == 'PERMANENT_FAILURE' && @empty($result['SuggestedIDList']) )
-        ) {
-        return false;
+      $this->debug[] = 'Validating a yahoo email address...';
+      $this->debug[] = 'Getting the sign up page content...';
+      $this->fetch_yahoo_signup_page();
+
+      $cookies = $this->get_yahoo_cookies();
+      $fields = $this->get_yahoo_fields();
+
+      $this->debug[] = 'Adding the email to fields...';
+      $fields['yid'] = str_replace('@yahoo.com', '', strtolower($this->email));
+      
+      $this->debug[] = 'Ready to submit the POST request to validate the email.';
+
+      $response = $this->request_yahoo_ajax($cookies, $fields);
+      
+      $this->debug[] = 'Parsing the response...';
+      $response_errors = json_decode($response, true)['errors'];
+
+      $this->debug[] = 'Searching errors for exisiting username error...';
+      foreach($response_errors as $err){
+        if($err['name'] == 'yid' && $err['error'] == 'IDENTIFIER_EXISTS'){
+          $this->debug[] = 'Found an error about exisiting email.';
+          return true;
+        }
       }
-      else {
-        return true;
+      return false;
+    }
+
+    private function fetch_yahoo_signup_page(){
+      $this->yahoo_signup_page_content = file_get_contents($this->_yahoo_signup_page_url);
+      if($this->yahoo_signup_page_content === false){
+        $this->debug[] = 'Could not read the sign up page.';
+        $this->add_error('200', 'Cannot not load the sign up page.');
+      }
+      else{
+        $this->debug[] = 'Sign up page content stored.';
+        $this->debug[] = 'Getting headers...';
+        $this->yahoo_signup_page_headers = $http_response_header;
+        $this->debug[] = 'Sign up page headers stored.';
       }
     }
 
+    private function get_yahoo_cookies(){
+      $this->debug[] = 'Attempting to get the cookies from the sign up page...';
+      if($this->yahoo_signup_page_content !== false){
+        $this->debug[] = 'Extracting cookies from headers...';
+        $cookies = array();
+        foreach ($this->yahoo_signup_page_headers as $hdr) {
+          if (preg_match('/^Set-Cookie:\s*(.*?;).*?$/', $hdr, $matches)) {
+            $cookies[] = $matches[1];
+          }
+        }
+
+        if(count($cookies) > 0){
+          $this->debug[] = 'Cookies found: '.implode(' ', $cookies);
+          return $cookies;
+        }
+        else{
+          $this->debug[] = 'Could not find any cookies.';
+        }
+      }
+
+      return false;
+    }
+
+    private function get_yahoo_fields(){
+      $dom = new DOMDocument();
+      $fields = array();
+      if(@$dom->loadHTML($this->yahoo_signup_page_content)){
+        $this->debug[] = 'Parsing the page for input fields...';
+        $xp = new DOMXpath($dom);
+        $nodes = $xp->query('//input');
+        foreach($nodes as $node){
+          $fields[$node->getAttribute('name')] = $node->getAttribute('value');
+        }
+
+        $this->debug[] = 'Extracted fields.';
+      }
+      else{
+        $this->debug[] = 'Something is worng with the page HTML.';
+        $this->add_error('210', 'Could not load the dom HTML.');
+      }
+      return $fields;
+    }
+
+    private function request_yahoo_ajax($cookies, $fields){
+      $headers = array();
+      $headers[] = 'Origin: https://login.yahoo.com';
+      $headers[] = 'X-Requested-With: XMLHttpRequest';
+      $headers[] = 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36';
+      $headers[] = 'content-type: application/x-www-form-urlencoded; charset=UTF-8';
+      $headers[] = 'Accept: */*';
+      $headers[] = 'Referer: https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
+      $headers[] = 'Accept-Encoding: gzip, deflate, br';
+      $headers[] = 'Accept-Language: en-US,en;q=0.8,ar;q=0.6';
+      
+      $cookies_str = implode(' ', $cookies);
+      $headers[] = 'Cookie: '.$cookies_str;
+
+
+      $postdata = http_build_query($fields);
+
+      $opts = array('http' =>
+        array(
+          'method'  => 'POST',
+          'header'  => $headers,
+          'content' => $postdata
+        )
+      );
+
+      $context  = stream_context_create($opts);
+      $result = file_get_contents($this->_yahoo_signup_ajax_url, false, $context);
+
+      return $result;
+    }
 
   }
