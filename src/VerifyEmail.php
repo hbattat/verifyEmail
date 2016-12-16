@@ -130,25 +130,25 @@
         $this->debug[] = 'Starting veriffication...';
         if(preg_match("/^220/i", $out = fgets($this->connect))){
           $this->debug[] = 'Got a 220 response. Sending HELO...';
-          fputs ($this->connect , "HELO ".$this->get_domain($this->email)."\r\n");
+          @fputs ($this->connect , "HELO ".$this->get_domain($this->email)."\r\n");
           $out = fgets ($this->connect);
           $this->debug_raw['helo'] = $out;
           $this->debug[] = 'Response: '.$out;
 
           $this->debug[] = 'Sending MAIL FROM...';
-          fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n");
+          @fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n");
           $from = fgets ($this->connect);
           $this->debug_raw['mail_from'] = $from;
           $this->debug[] = 'Response: '.$from;
 
           $this->debug[] = 'Sending RCPT TO...';
-          fputs ($this->connect , "RCPT TO: <".$this->email.">\r\n");
+          @fputs ($this->connect , "RCPT TO: <".$this->email.">\r\n");
           $to = fgets ($this->connect);
           $this->debug_raw['rcpt_to'] = $to;
           $this->debug[] = 'Response: '.$to;
 
           $this->debug[] = 'Sending QUIT...';
-          $quit = fputs ($this->connect , "QUIT");
+          $quit = @fputs ($this->connect , "QUIT");
           $this->debug_raw['quit'] = $quit;
           fclose($this->connect);
 
