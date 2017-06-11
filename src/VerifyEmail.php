@@ -257,17 +257,44 @@
     }
 
     private function fetch_yahoo_signup_page(){
-      $this->yahoo_signup_page_content = file_get_contents($this->_yahoo_signup_page_url);
-      if($this->yahoo_signup_page_content === false){
+		/*//addition
+		$ip_pool = array("167.114.48.81","167.114.48.82","167.114.48.83","167.114.48.84","167.114.48.85","167.114.48.86","66.70.144.17","66.70.144.18","66.70.144.19","66.70.144.20","66.70.144.21","66.70.144.22","66.70.144.23","66.70.144.24","66.70.144.25","66.70.144.26","66.70.144.27","66.70.144.28","66.70.144.29","66.70.144.30");
+		$opts = array('http' =>
+			array(
+			  'method'  => 'GET',
+			  'socket'=>array('bindto'=>$ip_pool[array_rand($ip_pool)].':0')
+			)
+		  );
+		$context2  = stream_context_create($opts);
+		$this->yahoo_signup_page_content = file_get_contents($this->_yahoo_signup_page_url, false, $context2);
+		//end addition
+      */
+	  $ch = curl_init($this->_yahoo_signup_page_url);
+	  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+	  curl_setopt($ch, CURLOPT_HEADER, true);
+
+	  //$this->yahoo_signup_page_content = file_get_contents($this->_yahoo_signup_page_url);
+	  //$this->yahoo_signup_page_content = curl_exec($ch);
+	  $response=curl_exec($ch);
+      //if($this->yahoo_signup_page_content === false){
+	  if ( curl_errno( $ch )) {
         $this->debug[] = 'Could not read the sign up page.';
         $this->add_error('200', 'Cannot not load the sign up page.');
+		$this->add_error('201',curl_error($ch));
       }
       else{
         $this->debug[] = 'Sign up page content stored.';
         $this->debug[] = 'Getting headers...';
-        $this->yahoo_signup_page_headers = $http_response_header;
-        $this->debug[] = 'Sign up page headers stored.';
+		//$this->debug[] = $response;
+		$header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+		$header = substr($response, 0, $header_size);
+		$this->yahoo_signup_page_content=substr($response, $header_size);
+        $this->yahoo_signup_page_headers = explode("\r\n",$header); //$http_response_header
+        //var_dump( $this->yahoo_signup_page_headers);
+		$this->debug[] = 'Sign up page headers stored.';
       }
+	  curl_close($ch);
     }
 
     private function get_yahoo_cookies(){
@@ -315,33 +342,62 @@
 
     private function request_yahoo_ajax($cookies, $fields){
       $headers = array();
-      $headers[] = 'Origin: https://login.yahoo.com';
-      $headers[] = 'X-Requested-With: XMLHttpRequest';
-      $headers[] = 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36';
+	  $headers[]= ':authority: login.yahoo.com';
+	  $headers[]= ':method: POST';
+	  $headers[]= ':path: /account/module/create?validateField=yid';
+	  $headers[] = ':scheme: https';
+      $headers[] = 'origin: https://login.yahoo.com';
+      $headers[] = 'x-requested-with: XMLHttpRequest';
+      $headers[] = 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36';
       $headers[] = 'content-type: application/x-www-form-urlencoded; charset=UTF-8';
-      $headers[] = 'Accept: */*';
-      $headers[] = 'Referer: https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
-      $headers[] = 'Accept-Encoding: gzip, deflate, br';
-      $headers[] = 'Accept-Language: en-US,en;q=0.8,ar;q=0.6';
+      $headers[] = 'accept: */*';
+      $headers[] = 'referer: https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
+      $headers[] = 'accept-encoding: gzip, deflate, br';
+      $headers[] = 'accept-language: en-US,en;q=0.8,ar;q=0.6';
       
       $cookies_str = implode(' ', $cookies);
-      $headers[] = 'Cookie: '.$cookies_str;
+      $headers[] = 'cookie: '.$cookies_str;
+	  
+//	  curl_setopt($ch,CURLOPT_POST, count($fields));
+	  foreach($fields as $key=>$value) { 
+	  	$fields_string .= $key.'='.$value.'&'; 
+	  }
+	  
+	  rtrim($fields_string, '&');
 
+	  $ch = curl_init($this->_yahoo_signup_ajax_url);
+	  curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+	  curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+	  curl_setopt($ch, CURLOPT_HEADER, 0);
+	  curl_setopt($ch,CURLOPT_POST, count($fields));
+	  curl_setopt($ch,CURLOPT_POSTFIELDS, $fields_string);
+	  curl_setopt($ch, CURLOPT_HTTPHEADER,$headers);
 
-      $postdata = http_build_query($fields);
-
-      $opts = array('http' =>
+      //$postdata = http_build_query($fields);
+		
+      /*$opts = array('http' =>
         array(
           'method'  => 'POST',
+		  //'socket'=>array('bindto'=>$ip_pool[array_rand($ip_pool)].':0'),
           'header'  => $headers,
           'content' => $postdata
         )
-      );
+      );*/
 
-      $context  = stream_context_create($opts);
-      $result = file_get_contents($this->_yahoo_signup_ajax_url, false, $context);
+      //$context  = stream_context_create($opts);
+      //$result= file_get_contents($this->_yahoo_signup_ajax_url, false, $context);
+	  $result=null;
+	  $response=curl_exec($ch);
+	  if ( curl_errno( $ch )) {
+		$this->debug[] = 'Could not read the ajax response.';
+		$this->add_error('202', 'Cannot not load the ajax response.');
+		$this->add_error('203',curl_error($ch));
+	  }
+	  else{
+	  	$result=$response;
+		//var_dump($result);
+	  }
+	  curl_close($ch);
 
       return $result;
     }
-
-  }
