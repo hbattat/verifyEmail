@@ -16,17 +16,19 @@ How to install (using composer):
 ==========================
 Add the package to `composer.json`
 
-    {
-    	"require": {
-    		"hbattat/verifyemail": "<version number>"
-    	}
+```JSON
+{
+    "require": {
+        "hbattat/verifyemail": "<version number>"
     }
-
+}
+```
 
 Then add the autoload to your file:
 
-    require 'vendor/autoload.php';
-
+```PHP
+require 'vendor/autoload.php';
+```
 
 That's all, now you are ready to use that class!
 
@@ -118,13 +120,15 @@ print_r($ve->get_debug(true));
 ```
 which will return an array:
 
-    Array
-    (
-        [helo] => 250 mx.google.com at your service
-        [mail_from] => 250 2.1.0 OK a68si4170774ioe.18 - gsmtp
-        [rcpt_to] => 250 2.1.5 OK a68si4170774ioe.18 - gsmtp
-        [quit] => 4
-    )
+```PHP
+Array
+(
+    [helo] => 250 mx.google.com at your service
+    [mail_from] => 250 2.1.0 OK a68si4170774ioe.18 - gsmtp
+    [rcpt_to] => 250 2.1.5 OK a68si4170774ioe.18 - gsmtp
+    [quit] => 4
+)
+```
 
 Other Examples:
 ===============
