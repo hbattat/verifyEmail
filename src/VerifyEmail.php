@@ -24,8 +24,8 @@
     private $mx;
     private $connect;
     private $errors;
-    private $debug;
-    private $debug_raw;
+    private $debug = [];
+    private $debug_raw = [];
 
     private $_yahoo_signup_page_url = 'https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
     private $_yahoo_signup_ajax_url = 'https://login.yahoo.com/account/module/create?validateField=yid';
@@ -33,8 +33,6 @@
     private $yahoo_signup_page_headers;
 
     public function __construct($email = null, $verifier_email = null, $port = 25){
-      $this->debug = array();
-      $this->debug_raw = array();
       if(!is_null($email) && !is_null($verifier_email)) {
         $this->debug[] = 'Initialized with Email: '.$email.', Verifier Email: '.$verifier_email.', Port: '.$port;
         $this->set_email($email);
