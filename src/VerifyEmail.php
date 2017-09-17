@@ -24,8 +24,8 @@
     private $mx;
     private $connect;
     private $errors;
-    private $debug;
-    private $debug_raw;
+    private $debug = [];
+    private $debug_raw = [];
 
     private $_yahoo_signup_page_url = 'https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
     private $_yahoo_signup_ajax_url = 'https://login.yahoo.com/account/module/create?validateField=yid';
@@ -33,23 +33,24 @@
     private $yahoo_signup_page_headers;
 
     public function __construct($email = null, $verifier_email = null, $port = 25){
-      $this->debug = array();
-      $this->debug_raw = array();
       if(!is_null($email) && !is_null($verifier_email)) {
-        $this->debug[] = 'Initialized with Email: '.$email.', Verifier Email: '.$verifier_email.', Port: '.$port;
+        $this->add_debug_message( sprintf("Initialized with Email: %s, Verifier Email: %s, Port: %s", $email , $verifier_email , $port ) );
         $this->set_email($email);
         $this->set_verifier_email($verifier_email);
       }
       else {
-        $this->debug[] = 'Initialized with no email or verifier email values';
+        $this->add_debug_message('Initialized with no email or verifier email values');
       }
       $this->set_port($port);
     }
 
+	protected function add_debug_message( $message ){
+		$this->debug[] = $message ;
+  	}
 
     public function set_verifier_email($email) {
       $this->verifier_email = $email;
-      $this->debug[] = 'Verifier Email was set to '.$email;
+      $this->add_debug_message('Verifier Email was set to '.$email);
     }
 
     public function get_verifier_email() {
@@ -59,7 +60,7 @@
 
     public function set_email($email) {
       $this->email = $email;
-      $this->debug[] = 'Email was set to '.$email;
+		$this->add_debug_message('Email was set to '.$email);
     }
 
     public function get_email() {
@@ -68,7 +69,7 @@
 
     public function set_port($port) {
       $this->port = $port;
-      $this->debug[] = 'Port was set to '.$port;
+		$this->add_debug_message('Port was set to '.$port);
     }
 
     public function get_port() {
@@ -101,69 +102,69 @@
       //otherwise check the normal way
       else {
         //find mx
-        $this->debug[] = 'Finding MX record...';
+        $this->add_debug_message('Finding MX record...');
         $this->find_mx();
 
         if(!$this->mx) {
-          $this->debug[] = 'No MX record was found.';
+          $this->add_debug_message( 'No MX record was found.');
           $this->add_error('100', 'No suitable MX records found.');
           return $is_valid;
         }
         else {
-          $this->debug[] = 'Found MX: '.$this->mx;
+          $this->add_debug_message('Found MX: '.$this->mx);
         }
 
 
-        $this->debug[] = 'Connecting to the server...';
+        $this->add_debug_message( 'Connecting to the server...' );
         $this->connect_mx();
 
         if(!$this->connect) {
-          $this->debug[] = 'Connection to server failed.';
+          $this->add_debug_message( 'Connection to server failed.' );
           $this->add_error('110', 'Could not connect to the server.');
           return $is_valid;
         }
         else {
-          $this->debug[] = 'Connection to server was successful.';
+          $this->add_debug_message( 'Connection to server was successful.');
         }
 
 
-        $this->debug[] = 'Starting veriffication...';
+        $this->add_debug_message('Starting veriffication...');
         if(preg_match("/^220/i", $out = fgets($this->connect))){
-          $this->debug[] = 'Got a 220 response. Sending HELO...';
+          $this->add_debug_message('Got a 220 response. Sending HELO...');
           fputs ($this->connect , "HELO ".$this->get_domain($this->verifier_email)."\r\n");
           $out = fgets ($this->connect);
           $this->debug_raw['helo'] = $out;
-          $this->debug[] = 'Response: '.$out;
+          $this->add_debug_message( 'Response: '.$out);
 
-          $this->debug[] = 'Sending MAIL FROM...';
+          $this->add_debug_message('Sending MAIL FROM...');
           fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n");
           $from = fgets ($this->connect);
           $this->debug_raw['mail_from'] = $from;
-          $this->debug[] = 'Response: '.$from;
+          $this->add_debug_message('Response: '.$from);
 
-          $this->debug[] = 'Sending RCPT TO...';
+          $this->add_debug_message( 'Sending RCPT TO...' );
           fputs ($this->connect , "RCPT TO: <".$this->email.">\r\n");
           $to = fgets ($this->connect);
           $this->debug_raw['rcpt_to'] = $to;
-          $this->debug[] = 'Response: '.$to;
+          $this->add_debug_message('Response: '.$to);
 
-          $this->debug[] = 'Sending QUIT...';
+          $this->add_debug_message('Sending QUIT...');
           $quit = fputs ($this->connect , "QUIT");
           $this->debug_raw['quit'] = $quit;
           fclose($this->connect);
 
-          $this->debug[] = 'Looking for 250 response...';
+          $this->add_debug_message('Looking for 250 response...');
           if(!preg_match("/^250/i", $from) || !preg_match("/^250/i", $to)){
-            $this->debug[] = 'Not found! Email is invalid.';
+            $this->add_debug_message('Not found! Email is invalid.');
             $is_valid = false;
           }
           else{
-            $this->debug[] = 'Found! Email is valid.';
+            $this->add_debug_message('Found! Email is valid.');
             $is_valid = true;
           }
         }
         else {
-          $this->debug[] = 'Encountered an unknown response code.';
+          $this->add_debug_message('Encountered an unknown response code.');
         }
       }
 
@@ -229,27 +230,27 @@
     }
 
     private function validate_yahoo() {
-      $this->debug[] = 'Validating a yahoo email address...';
-      $this->debug[] = 'Getting the sign up page content...';
+      $this->add_debug_message('Validating a yahoo email address...');
+      $this->add_debug_message('Getting the sign up page content...');
       $this->fetch_yahoo_signup_page();
 
       $cookies = $this->get_yahoo_cookies();
       $fields = $this->get_yahoo_fields();
 
-      $this->debug[] = 'Adding the email to fields...';
+      $this->add_debug_message('Adding the email to fields...');
       $fields['yid'] = str_replace('@yahoo.com', '', strtolower($this->email));
       
-      $this->debug[] = 'Ready to submit the POST request to validate the email.';
+      $this->add_debug_message('Ready to submit the POST request to validate the email.');
 
       $response = $this->request_yahoo_ajax($cookies, $fields);
       
-      $this->debug[] = 'Parsing the response...';
+      $this->add_debug_message('Parsing the response...');
       $response_errors = json_decode($response, true)['errors'];
 
-      $this->debug[] = 'Searching errors for exisiting username error...';
+      $this->add_debug_message('Searching errors for exisiting username error...');
       foreach($response_errors as $err){
         if($err['name'] == 'yid' && $err['error'] == 'IDENTIFIER_EXISTS'){
-          $this->debug[] = 'Found an error about exisiting email.';
+          $this->add_debug_message('Found an error about exisiting email.');
           return true;
         }
       }
@@ -259,21 +260,21 @@
     private function fetch_yahoo_signup_page(){
       $this->yahoo_signup_page_content = file_get_contents($this->_yahoo_signup_page_url);
       if($this->yahoo_signup_page_content === false){
-        $this->debug[] = 'Could not read the sign up page.';
+        $this->add_debug_message('Could not read the sign up page.');
         $this->add_error('200', 'Cannot not load the sign up page.');
       }
       else{
-        $this->debug[] = 'Sign up page content stored.';
-        $this->debug[] = 'Getting headers...';
+        $this->add_debug_message('Sign up page content stored.');
+        $this->add_debug_message('Getting headers...');
         $this->yahoo_signup_page_headers = $http_response_header;
-        $this->debug[] = 'Sign up page headers stored.';
+        $this->add_debug_message('Sign up page headers stored.');
       }
     }
 
     private function get_yahoo_cookies(){
-      $this->debug[] = 'Attempting to get the cookies from the sign up page...';
+      $this->add_debug_message('Attempting to get the cookies from the sign up page...');
       if($this->yahoo_signup_page_content !== false){
-        $this->debug[] = 'Extracting cookies from headers...';
+        $this->add_debug_message('Extracting cookies from headers...');
         $cookies = array();
         foreach ($this->yahoo_signup_page_headers as $hdr) {
           if (preg_match('/^Set-Cookie:\s*(.*?;).*?$/', $hdr, $matches)) {
@@ -282,11 +283,11 @@
         }
 
         if(count($cookies) > 0){
-          $this->debug[] = 'Cookies found: '.implode(' ', $cookies);
+          $this->add_debug_message('Cookies found: '.implode(' ', $cookies));
           return $cookies;
         }
         else{
-          $this->debug[] = 'Could not find any cookies.';
+          $this->add_debug_message('Could not find any cookies.');
         }
       }
 
@@ -297,17 +298,17 @@
       $dom = new DOMDocument();
       $fields = array();
       if(@$dom->loadHTML($this->yahoo_signup_page_content)){
-        $this->debug[] = 'Parsing the page for input fields...';
+        $this->add_debug_message('Parsing the page for input fields...');
         $xp = new DOMXpath($dom);
         $nodes = $xp->query('//input');
         foreach($nodes as $node){
           $fields[$node->getAttribute('name')] = $node->getAttribute('value');
         }
 
-        $this->debug[] = 'Extracted fields.';
+        $this->add_debug_message('Extracted fields.');
       }
       else{
-        $this->debug[] = 'Something is worng with the page HTML.';
+        $this->add_debug_message('Something is worng with the page HTML.');
         $this->add_error('210', 'Could not load the dom HTML.');
       }
       return $fields;
