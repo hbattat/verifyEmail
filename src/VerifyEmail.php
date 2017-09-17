@@ -34,16 +34,19 @@
 
     public function __construct($email = null, $verifier_email = null, $port = 25){
       if(!is_null($email) && !is_null($verifier_email)) {
-        $this->debug[] = 'Initialized with Email: '.$email.', Verifier Email: '.$verifier_email.', Port: '.$port;
+        $this->add_debug_message( sprintf("Initialized with Email: %s, Verifier Email: %s, Port: %s", $email , $verifier_email , $port ) );
         $this->set_email($email);
         $this->set_verifier_email($verifier_email);
       }
       else {
-        $this->debug[] = 'Initialized with no email or verifier email values';
+        $this->add_debug_message('Initialized with no email or verifier email values');
       }
       $this->set_port($port);
     }
 
+	protected function add_debug_message( $message ){
+		$this->debug[] = $message ;
+  	}
 
     public function set_verifier_email($email) {
       $this->verifier_email = $email;
