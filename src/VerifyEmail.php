@@ -29,8 +29,12 @@
 
     private $_yahoo_signup_page_url = 'https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
     private $_yahoo_signup_ajax_url = 'https://login.yahoo.com/account/module/create?validateField=yid';
-    private $yahoo_signup_page_content;
-    private $yahoo_signup_page_headers;
+    private $_yahoo_domains = array('yahoo.com');
+    private $_hotmail_signin_page_url = 'https://login.live.com/';
+    private $_hotmail_username_check_url = 'https://login.live.com/GetCredentialType.srf?wa=wsignin1.0';
+    private $_hotmail_domains = array('hotmail.com', 'live.com', 'outlook.com', 'msn.com');
+    private $page_content;
+    private $page_headers;
 
     public function __construct($email = null, $verifier_email = null, $port = 25){
       $this->debug = array();
@@ -95,8 +99,11 @@
 
       //check if this is a yahoo email
       $domain = $this->get_domain($this->email);
-      if(strtolower($domain) == 'yahoo.com') {
+      if(in_array(strtolower($domain), $this->_yahoo_domains)) {
         $is_valid = $this->validate_yahoo();
+      }
+      else if(in_array(strtolower($domain), $this->_hotmail_domains)){
+        $is_valid = $this->validate_hotmail();
       }
       //otherwise check the normal way
       else {
@@ -171,7 +178,7 @@
     }
 
     private function get_domain($email) {
-      $email_arr = explode("@", $email);
+      $email_arr = explode('@', $email);
       $domain = array_slice($email_arr, -1);
       return $domain[0];
     }
@@ -179,11 +186,11 @@
       $domain = $this->get_domain($this->email);
       $mx_ip = false;
       // Trim [ and ] from beginning and end of domain string, respectively
-      $domain = ltrim($domain, "[");
-      $domain = rtrim($domain, "]");
+      $domain = ltrim($domain, '[');
+      $domain = rtrim($domain, ']');
 
-      if( "IPv6:" == substr($domain, 0, strlen("IPv6:")) ) {
-        $domain = substr($domain, strlen("IPv6") + 1);
+      if( 'IPv6:' == substr($domain, 0, strlen('IPv6:')) ) {
+        $domain = substr($domain, strlen('IPv6') + 1);
       }
 
       $mxhosts = array();
@@ -231,17 +238,17 @@
     private function validate_yahoo() {
       $this->debug[] = 'Validating a yahoo email address...';
       $this->debug[] = 'Getting the sign up page content...';
-      $this->fetch_yahoo_signup_page();
+      $this->fetch_page('yahoo');
 
-      $cookies = $this->get_yahoo_cookies();
-      $fields = $this->get_yahoo_fields();
+      $cookies = $this->get_cookies();
+      $fields = $this->get_fields();
 
       $this->debug[] = 'Adding the email to fields...';
       $fields['yid'] = str_replace('@yahoo.com', '', strtolower($this->email));
       
       $this->debug[] = 'Ready to submit the POST request to validate the email.';
 
-      $response = $this->request_yahoo_ajax($cookies, $fields);
+      $response = $this->request_validation('yahoo', $cookies, $fields);
       
       $this->debug[] = 'Parsing the response...';
       $response_errors = json_decode($response, true)['errors'];
@@ -256,27 +263,78 @@
       return false;
     }
 
-    private function fetch_yahoo_signup_page(){
-      $this->yahoo_signup_page_content = file_get_contents($this->_yahoo_signup_page_url);
-      if($this->yahoo_signup_page_content === false){
+    private function validate_hotmail() {
+      $this->debug[] = 'Validating a hotmail email address...';
+      $this->debug[] = 'Getting the sign up page content...';
+      $this->fetch_page('hotmail');
+
+      $cookies = $this->get_cookies();
+
+      $this->debug[] = 'Sending another request to get the needed cookies for validation...';
+      $this->fetch_page('hotmail', implode(' ', $cookies));
+      $cookies = $this->get_cookies();
+
+      $this->debug[] = 'Preparing fields...';
+      $fields = $this->prep_hotmail_fields($cookies);
+
+      $this->debug[] = 'Ready to submit the POST request to validate the email.';
+      $response = $this->request_validation('hotmail', $cookies, $fields);
+
+      $this->debug[] = 'Searching username error...';
+      $json_response = json_decode($response, true);
+      if(!$json_response['IfExistsResult']){
+        return true;
+      }
+      return false;
+    }
+
+    private function fetch_page($service, $cookies = ''){
+      if($cookies){
+        $opts = array(
+          'http'=>array(
+            'method'=>"GET",
+            'header'=>"Accept-language: en\r\n" .
+                      "Cookie: ".$cookies."\r\n"
+          )
+        );
+        $context = stream_context_create($opts);
+      }
+      if($service == 'yahoo'){
+        if($cookies){
+          $this->page_content = file_get_contents($this->_yahoo_signup_page_url, false, $context);
+        }
+        else{
+          $this->page_content = file_get_contents($this->_yahoo_signup_page_url);
+        }
+      }
+      else if($service == 'hotmail'){
+        if($cookies){
+          $this->page_content = file_get_contents($this->_hotmail_signin_page_url, false, $context);
+        }
+        else{
+          $this->page_content = file_get_contents($this->_hotmail_signin_page_url);
+        }
+      }
+
+      if($this->page_content === false){
         $this->debug[] = 'Could not read the sign up page.';
         $this->add_error('200', 'Cannot not load the sign up page.');
       }
       else{
         $this->debug[] = 'Sign up page content stored.';
         $this->debug[] = 'Getting headers...';
-        $this->yahoo_signup_page_headers = $http_response_header;
+        $this->page_headers = $http_response_header;
         $this->debug[] = 'Sign up page headers stored.';
       }
     }
 
-    private function get_yahoo_cookies(){
+    private function get_cookies(){
       $this->debug[] = 'Attempting to get the cookies from the sign up page...';
-      if($this->yahoo_signup_page_content !== false){
+      if($this->page_content !== false){
         $this->debug[] = 'Extracting cookies from headers...';
         $cookies = array();
-        foreach ($this->yahoo_signup_page_headers as $hdr) {
-          if (preg_match('/^Set-Cookie:\s*(.*?;).*?$/', $hdr, $matches)) {
+        foreach ($this->page_headers as $hdr) {
+          if (preg_match('/^Set-Cookie:\s*(.*?;).*?$/i', $hdr, $matches)) {
             $cookies[] = $matches[1];
           }
         }
@@ -289,14 +347,13 @@
           $this->debug[] = 'Could not find any cookies.';
         }
       }
-
       return false;
     }
 
-    private function get_yahoo_fields(){
+    private function get_fields(){
       $dom = new DOMDocument();
       $fields = array();
-      if(@$dom->loadHTML($this->yahoo_signup_page_content)){
+      if(@$dom->loadHTML($this->page_content)){
         $this->debug[] = 'Parsing the page for input fields...';
         $xp = new DOMXpath($dom);
         $nodes = $xp->query('//input');
@@ -313,35 +370,76 @@
       return $fields;
     }
 
-    private function request_yahoo_ajax($cookies, $fields){
-      $headers = array();
-      $headers[] = 'Origin: https://login.yahoo.com';
-      $headers[] = 'X-Requested-With: XMLHttpRequest';
-      $headers[] = 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36';
-      $headers[] = 'content-type: application/x-www-form-urlencoded; charset=UTF-8';
-      $headers[] = 'Accept: */*';
-      $headers[] = 'Referer: https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
-      $headers[] = 'Accept-Encoding: gzip, deflate, br';
-      $headers[] = 'Accept-Language: en-US,en;q=0.8,ar;q=0.6';
+    private function request_validation($service, $cookies, $fields){
+      if($service == 'yahoo'){
+        $headers = array();
+        $headers[] = 'Origin: https://login.yahoo.com';
+        $headers[] = 'X-Requested-With: XMLHttpRequest';
+        $headers[] = 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36';
+        $headers[] = 'content-type: application/x-www-form-urlencoded; charset=UTF-8';
+        $headers[] = 'Accept: */*';
+        $headers[] = 'Referer: https://login.yahoo.com/account/create?specId=yidReg&lang=en-US&src=&done=https%3A%2F%2Fwww.yahoo.com&display=login';
+        $headers[] = 'Accept-Encoding: gzip, deflate, br';
+        $headers[] = 'Accept-Language: en-US,en;q=0.8,ar;q=0.6';
       
-      $cookies_str = implode(' ', $cookies);
-      $headers[] = 'Cookie: '.$cookies_str;
+        $cookies_str = implode(' ', $cookies);
+        $headers[] = 'Cookie: '.$cookies_str;
 
 
-      $postdata = http_build_query($fields);
+        $postdata = http_build_query($fields);
 
-      $opts = array('http' =>
-        array(
-          'method'  => 'POST',
-          'header'  => $headers,
-          'content' => $postdata
-        )
-      );
+        $opts = array('http' =>
+          array(
+            'method'  => 'POST',
+            'header'  => $headers,
+            'content' => $postdata
+          )
+        );
 
-      $context  = stream_context_create($opts);
-      $result = file_get_contents($this->_yahoo_signup_ajax_url, false, $context);
+        $context  = stream_context_create($opts);
+        $result = file_get_contents($this->_yahoo_signup_ajax_url, false, $context);
+      }
+      else if($service == 'hotmail'){
+        $headers = array();
+        $headers[] = 'Origin: https://login.live.com';
+        $headers[] = 'hpgid: 33';
+        $headers[] = 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36';
+        $headers[] = 'Content-type: application/json; charset=UTF-8';
+        $headers[] = 'Accept: application/json';
+        $headers[] = 'Referer: https://login.live.com';
+        $headers[] = 'Accept-Encoding: gzip, deflate, br';
+        $headers[] = 'Accept-Language: en-US,en;q=0.8,ar;q=0.6';
 
+        $cookies_str = implode(' ', $cookies);
+        $headers[] = 'Cookie: '.$cookies_str;
+
+        $postdata = json_encode($fields);
+
+        $opts = array('http' =>
+          array(
+            'method'  => 'POST',
+            'header'  => $headers,
+            'content' => $postdata
+          )
+        );
+
+        $context  = stream_context_create($opts);
+        $result = file_get_contents($this->_hotmail_username_check_url, false, $context);
+      }
       return $result;
+    }
+
+    private function prep_hotmail_fields($cookies){
+      $fields = array();
+      foreach($cookies as $cookie){
+        list($key, $val) = explode('=', $cookie, 2);
+        if($key == 'uaid'){
+          $fields['uaid'] = $val;
+          break;
+        }
+      }
+      $fields['username'] = strtolower($this->email);
+      return $fields;
     }
 
   }
