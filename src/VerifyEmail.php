@@ -135,7 +135,14 @@
 
 
         $this->debug[] = 'Starting veriffication...';
-        if(preg_match("/^220/i", $out = fgets($this->connect))){
+        while( preg_match("/^220-/i", $out = fgets($this->connect)) ){
+          $this->debug_raw['fake_connect'][] = $out;          
+          usleep(10000); //some servers have delay
+        }
+
+        if( preg_match("/^220 /i", $out ) ){
+          $this->debug_raw['connect'] = $out;
+          $this->debug[] = 'Response: '.$out;
           $this->debug[] = 'Got a 220 response. Sending HELO...';
           fputs ($this->connect , "HELO ".$this->get_domain($this->verifier_email)."\r\n");
           $out = fgets ($this->connect);
