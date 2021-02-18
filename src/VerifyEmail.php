@@ -282,8 +282,10 @@
 
       $this->debug[] = 'Searching username error...';
       $json_response = json_decode($response, true);
-      if(!$json_response['IfExistsResult']){
-        return true;
+      if (array_key_exists('IfExistsResult',$json_response)){
+        if(!$json_response['IfExistsResult']){
+          return true;
+        }
       }
       return false;
     }
