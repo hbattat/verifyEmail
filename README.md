@@ -1,7 +1,7 @@
 VerifyEmail
 ==========
 
-## *** IMPORTANT *** Due to multiple requests, I now have a supported private repo for the same code that you can get access to. Visit https://hbattat.com/verifyemail.html for details.
+## *** IMPORTANT *** This is repo is no longer maintained.
 
 
 
