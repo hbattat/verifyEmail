@@ -161,6 +161,14 @@
 
           $this->debug[] = 'Looking for 250 response...';
           if(!preg_match("/^250/i", $from) || !preg_match("/^250/i", $to)){
+            if(!preg_match("/^250/i", $from)){
+              preg_match('!\d+!', $from, $matches);
+              $this->add_error($matches[0], $from);
+            }
+            if(!preg_match("/^250/i", $to)){
+              preg_match('!\d+!', $to, $matches);
+              $this->add_error($matches[0], $to);
+            }
             $this->debug[] = 'Not found! Email is invalid.';
             $is_valid = false;
           }
