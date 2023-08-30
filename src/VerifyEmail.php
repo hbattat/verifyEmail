@@ -164,12 +164,14 @@
             if(!preg_match("/^250/i", $from)){
               preg_match('!\d+!', $from, $matches);
               preg_match('/\d+\.\d+\.\d+/', $from, $sMatches);
-              $this->add_error($matches[0], $sMatches[0], $from);
+              $reply_code = isset($sMatches[0]) ? $sMatches[0] : '';
+              $this->add_error($matches[0], $reply_code, $from);
             }
             if(!preg_match("/^250/i", $to)){
               preg_match('!\d+!', $to, $matches);
               preg_match('/\d+\.\d+\.\d+/', $to, $sMatches);
-              $this->add_error($matches[0], $sMatches[0], $to);
+              $reply_code = isset($sMatches[0]) ? $sMatches[0] : '';
+              $this->add_error($matches[0], $reply_code, $to);
             }
             $this->debug[] = 'Not found! Email is invalid.';
             $is_valid = false;
