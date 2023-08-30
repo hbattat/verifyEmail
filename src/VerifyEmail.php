@@ -257,9 +257,13 @@
       $this->debug[] = 'Ready to submit the POST request to validate the email.';
 
       $response = $this->request_validation('yahoo', $cookies, $fields);
+      $response = json_decode($response, true);
+      if (empty($response['errors'])) {
+        return true;
+      }
       
       $this->debug[] = 'Parsing the response...';
-      $response_errors = json_decode($response, true)['errors'];
+      $response_errors = is_array($response['errors']) ? $response['errors'] : [];
 
       $this->debug[] = 'Searching errors for exisiting username error...';
       foreach($response_errors as $err){
