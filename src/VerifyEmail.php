@@ -113,7 +113,7 @@
 
         if(!$this->mx) {
           $this->debug[] = 'No MX record was found.';
-          $this->add_error('100', 'No suitable MX records found.');
+          $this->add_error('100', '', 'No suitable MX records found.');
           return $is_valid;
         }
         else {
@@ -126,7 +126,7 @@
 
         if(!$this->connect) {
           $this->debug[] = 'Connection to server failed.';
-          $this->add_error('110', 'Could not connect to the server.');
+          $this->add_error('110', '', 'Could not connect to the server.');
           return $is_valid;
         }
         else {
@@ -163,11 +163,13 @@
           if(!preg_match("/^250/i", $from) || !preg_match("/^250/i", $to)){
             if(!preg_match("/^250/i", $from)){
               preg_match('!\d+!', $from, $matches);
-              $this->add_error($matches[0], $from);
+              preg_match('/\d+\.\d+\.\d+/', $from, $sMatches);
+              $this->add_error($matches[0], $sMatches[0], $from);
             }
             if(!preg_match("/^250/i", $to)){
               preg_match('!\d+!', $to, $matches);
-              $this->add_error($matches[0], $to);
+              preg_match('/\d+\.\d+\.\d+/', $to, $sMatches);
+              $this->add_error($matches[0], $sMatches[0], $to);
             }
             $this->debug[] = 'Not found! Email is invalid.';
             $is_valid = false;
@@ -235,8 +237,8 @@
       $this->connect = @fsockopen($this->mx, $this->port);
     }
 
-    private function add_error($code, $msg) {
-      $this->errors[] = array('code' => $code, 'message' => $msg);
+    private function add_error($code, $reply_code, $msg) {
+      $this->errors[] = array('code' => $code, 'reply_code' => $reply_code, 'message' => $msg);
     }
 
     private function clear_errors() {
@@ -330,7 +332,7 @@
 
       if($this->page_content === false){
         $this->debug[] = 'Could not read the sign up page.';
-        $this->add_error('200', 'Cannot not load the sign up page.');
+        $this->add_error('200', '', 'Cannot not load the sign up page.');
       }
       else{
         $this->debug[] = 'Sign up page content stored.';
@@ -377,7 +379,7 @@
       }
       else{
         $this->debug[] = 'Something is worng with the page HTML.';
-        $this->add_error('210', 'Could not load the dom HTML.');
+        $this->add_error('210', '', 'Could not load the dom HTML.');
       }
       return $fields;
     }
