@@ -2,6 +2,8 @@
   namespace hbattat;
   use \DOMDocument;
   use \DOMXpath;
+use Exception;
+
   /**
    *  Verifies email address by attempting to connect and check with the mail server of that account
    *
@@ -99,14 +101,14 @@
 
       //check if this is a yahoo email
       $domain = $this->get_domain($this->email);
-      if(in_array(strtolower($domain), $this->_yahoo_domains)) {
-        $is_valid = $this->validate_yahoo();
-      }
-      else if(in_array(strtolower($domain), $this->_hotmail_domains)){
-        $is_valid = $this->validate_hotmail();
-      }
+      // if(in_array(strtolower($domain), $this->_yahoo_domains)) {
+      //   $is_valid = $this->validate_yahoo();
+      // }
+      // else if(in_array(strtolower($domain), $this->_hotmail_domains)){
+      //   $is_valid = $this->validate_hotmail();
+      // }
       //otherwise check the normal way
-      else {
+      //else {
         //find mx
         $this->debug[] = 'Finding MX record...';
         $this->find_mx();
@@ -141,9 +143,31 @@
           $out = fgets ($this->connect);
           $this->debug_raw['helo'] = $out;
           $this->debug[] = 'Response: '.$out;
+          if(!preg_match("/^250/i", $out)){
+            if(!preg_match("/^250/i", $out)){
+              preg_match('!\d+!', $out, $matches);
+              preg_match('/\d+\.\d+\.\d+/', $out, $sMatches);
+              $reply_code = isset($sMatches[0]) ? $sMatches[0] : '';
+              $this->add_error($matches[0], $reply_code, $out);
+            }
+            $this->debug[] = 'Not found! Email is invalid.';
+            $is_valid = false;
+            return false;
+          }
 
           $this->debug[] = 'Sending MAIL FROM...';
-          fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n");
+          try {
+            fputs ($this->connect , "MAIL FROM: <".$this->verifier_email.">\r\n");
+          } catch(Exception $e) {
+            $errorMessage = $e->getMessage();
+            if ($errorMessage !== null && strpos($errorMessage, 'Broken pipe') !== false) {
+                // Handle the broken pipe error here
+                $this->debug_raw['mail_from'] = $errorMessage;
+                $this->debug[] = 'Response: '. $errorMessage;
+                $is_valid = false;
+            } 
+            return false;
+          }
           $from = fgets ($this->connect);
           $this->debug_raw['mail_from'] = $from;
           $this->debug[] = 'Response: '.$from;
@@ -184,7 +208,7 @@
         else {
           $this->debug[] = 'Encountered an unknown response code.';
         }
-      }
+      //}
 
       return $is_valid;
     }
@@ -298,7 +322,9 @@
 
       $this->debug[] = 'Searching username error...';
       $json_response = json_decode($response, true);
-      if(!$json_response['IfExistsResult']){
+      $this->debug[] = print_r($json_response, true);
+
+      if(!empty($json_response['IfExistsResult'])){
         return true;
       }
       return false;
@@ -438,7 +464,7 @@
             'content' => $postdata
           )
         );
-
+        $this->debug[] = print_r($opts, true);
         $context  = stream_context_create($opts);
         $result = file_get_contents($this->_hotmail_username_check_url, false, $context);
       }
