@@ -183,20 +183,11 @@ class VerifyEmail
       $this->debug_raw['mail_from'] = $from;
       $this->debug[] = 'Response: ' . $from;
 
-      $this->debug[] = 'Sending RCPT TO for anything...';
-      fputs($this->connect, "RCPT TO: <" . str_replace(explode('@', $this->email)[0], 'anything'.time(), $this->email) . ">\r\n");
+      $this->debug[] = 'Sending RCPT TO...';
+      fputs($this->connect, "RCPT TO: <" . $this->email . ">\r\n");
       $to = fgets($this->connect);
-      $this->debug_raw['rcpt_to_anything'] = $to;
+      $this->debug_raw['rcpt_to'] = $to;
       $this->debug[] = 'Response: ' . $to;
-      if (preg_match("/^250/i", $to)) {
-        $this->catch_all = true;
-      } else {
-        $this->debug[] = 'Sending RCPT TO...';
-        fputs($this->connect, "RCPT TO: <" . $this->email . ">\r\n");
-        $to = fgets($this->connect);
-        $this->debug_raw['rcpt_to'] = $to;
-        $this->debug[] = 'Response: ' . $to;
-      }
 
       $this->debug[] = 'Sending QUIT...';
       $quit = fputs($this->connect, "QUIT");
