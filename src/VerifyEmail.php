@@ -184,7 +184,7 @@ class VerifyEmail
       $this->debug[] = 'Response: ' . $from;
 
       $this->debug[] = 'Sending RCPT TO for anything...';
-      fputs($this->connect, "RCPT TO: <" . str_replace(explode('@', $this->email)[0], 'anything', $this->email) . ">\r\n");
+      fputs($this->connect, "RCPT TO: <" . str_replace(explode('@', $this->email)[0], 'anything'.time(), $this->email) . ">\r\n");
       $to = fgets($this->connect);
       $this->debug_raw['rcpt_to_anything'] = $to;
       $this->debug[] = 'Response: ' . $to;
