@@ -26,7 +26,6 @@ class VerifyEmail
   public $email;
   public $verifier_email;
   public $port;
-  public $catch_all;
   private $mx;
   private $connect;
   private $errors;
@@ -46,7 +45,6 @@ class VerifyEmail
   {
     $this->debug = array();
     $this->debug_raw = array();
-    $this->catch_all = false;
     if (!is_null($email) && !is_null($verifier_email)) {
       $this->debug[] = 'Initialized with Email: ' . $email . ', Verifier Email: ' . $verifier_email . ', Port: ' . $port;
       $this->set_email($email);
